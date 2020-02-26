@@ -12,5 +12,7 @@ if(file_exists(__DIR__ . DS . 'site.php')) {
   $kirby = kirby();
 }
 
+//require_once('stripe-php/init.php');
+
 // render
 echo $kirby->launch();

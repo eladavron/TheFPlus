@@ -3,6 +3,7 @@
 <?php
   $pubdate = date('l, F jS Y', $page->date());
   $pubtime = date("g:ia", strtotime($page->time()));
+  require_once('stripe-php/init.php');
 ?>
 
 <main class="main page" role="main">
@@ -47,6 +48,136 @@
       
       <div class="article-text" itemprop="description">
         <?php echo $page->text()->kirbytext() ?>
+      </div>
+
+
+      <div class="stripe-box">
+        <h1>Hello!</h1>
+        <?php 
+          \Stripe\Stripe::setApiKey('sk_test_5OebpkDdlb1mnEeq8HVM1i8a');
+          $intent = \Stripe\PaymentIntent::create([
+            'amount' => 1099,
+            'currency' => 'usd',
+          ]);
+          $output = [
+            'publishableKey' => 'pk_test_7fx1utWsqpOCrlIqTycFTSi7',
+            'clientSecret' => $intent->client_secret,
+          ];
+
+          echo '<script> const data = { publishableKey: "pk_test_7fx1utWsqpOCrlIqTycFTSi7", clientSecret: '. $intent->client_secret .' }</script>';
+        ?>
+
+        <form id="payment-form">
+          <div id="card-element">
+            <!-- Elements will create input elements here -->
+          </div>
+
+          <!-- We'll put the error messages in this element -->
+          <div id="card-errors" role="alert"></div>
+
+          <button style="font-size:60px;" id="submit">Pay</button>
+        </form>
+
+        <script src="https://js.stripe.com/v3/"></script>
+        <script>
+          
+
+          // A reference to Stripe.js
+var stripe;
+
+var orderData = {
+  items: [{ id: "photo-subscription" }],
+  currency: "usd"
+};
+
+// Disable the button until we have Stripe set up on the page
+//document.querySelector("button").disabled = true;
+
+stripe = Stripe(data.publishableKey);
+var elements = stripe.elements();
+var card = elements.create("card", { style: style });
+card.mount("#card-element");
+const clientSecret = data.clientSecret;
+
+// Handle form submission.
+var form = document.getElementById("payment-form");
+form.addEventListener("submit", function(event) {
+  event.preventDefault();
+  // Initiate payment when the submit button is clicked
+  pay(stripe, card, clientSecret);
+});
+
+/*
+ * Calls stripe.confirmCardPayment which creates a pop-up modal to
+ * prompt the user to enter extra authentication details without leaving your page
+ */
+var pay = function(stripe, card, clientSecret) {
+  changeLoadingState(true);
+
+  // Initiate the payment.
+  // If authentication is required, confirmCardPayment will automatically display a modal
+  stripe
+    .confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: card
+      }
+    })
+    .then(function(result) {
+      if (result.error) {
+        // Show error to your customer
+        showError(result.error.message);
+      } else {
+        // The payment has been processed!
+        orderComplete(clientSecret);
+      }
+    });
+};
+
+/* ------- Post-payment helpers ------- */
+
+/* Shows a success / error message when the payment is complete */
+var orderComplete = function(clientSecret) {
+  // Just for the purpose of the sample, show the PaymentIntent response object
+  stripe.retrievePaymentIntent(clientSecret).then(function(result) {
+    var paymentIntent = result.paymentIntent;
+    var paymentIntentJson = JSON.stringify(paymentIntent, null, 2);
+
+    document.querySelector(".sr-payment-form").classList.add("hidden");
+    document.querySelector("pre").textContent = paymentIntentJson;
+
+    document.querySelector(".sr-result").classList.remove("hidden");
+    setTimeout(function() {
+      document.querySelector(".sr-result").classList.add("expand");
+    }, 200);
+
+    changeLoadingState(false);
+  });
+};
+
+var showError = function(errorMsgText) {
+  changeLoadingState(false);
+  var errorMsg = document.querySelector(".sr-field-error");
+  errorMsg.textContent = errorMsgText;
+  setTimeout(function() {
+    errorMsg.textContent = "";
+  }, 4000);
+};
+
+// Show a spinner on payment submission
+var changeLoadingState = function(isLoading) {
+  if (isLoading) {
+    document.querySelector("button").disabled = true;
+    document.querySelector("#spinner").classList.remove("hidden");
+    document.querySelector("#button-text").classList.add("hidden");
+  } else {
+    document.querySelector("button").disabled = false;
+    document.querySelector("#spinner").classList.add("hidden");
+    document.querySelector("#button-text").classList.remove("hidden");
+  }
+};
+
+        </script>
+
       </div>
 
       <? /* Single Product Form */ ?>
